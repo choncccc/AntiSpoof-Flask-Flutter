@@ -1,6 +1,4 @@
 import 'dart:typed_data';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:http/http.dart' as http;
@@ -9,16 +7,6 @@ import 'dart:convert';
 class FaceDetectionScreen extends StatefulWidget {
   @override
   _FaceDetectionScreenState createState() => _FaceDetectionScreenState();
-  // HttpOverrides.global = MyHttpOverrides();
-}
-
-class MyHttpOverrides extends HttpOverrides {
-  @override
-  HttpClient createHttpClient(SecurityContext? context) {
-    return super.createHttpClient(context)
-      ..badCertificateCallback =
-          (X509Certificate cert, String host, int port) => true;
-  }
 }
 
 class _FaceDetectionScreenState extends State<FaceDetectionScreen> {
@@ -53,11 +41,16 @@ class _FaceDetectionScreenState extends State<FaceDetectionScreen> {
   Future<void> processCameraImage(CameraImage image) async {
     try {
       // Convert CameraImage to raw bytes
-      final Uint8List bytes = concatenatePlanes(image.planes);
+      final Uint8List bytes = concatenatePlanes(image.planes, image.width, image.height);
+
+      if (bytes.isEmpty) {
+        print("No image data captured");
+        return;
+      }
 
       // Send image to server
       final response = await http.post(
-        Uri.parse('https://192.168.155.105:5000/detect'),
+        Uri.parse('http://192.168.100.7:5000/process_frame'),
         headers: {'Content-Type': 'application/octet-stream'},
         body: bytes,
       );
@@ -83,12 +76,17 @@ class _FaceDetectionScreenState extends State<FaceDetectionScreen> {
     }
   }
 
-  Uint8List concatenatePlanes(List<Plane> planes) {
-    final WriteBuffer allBytes = WriteBuffer();
+  Uint8List concatenatePlanes(List<Plane> planes, int width, int height) {
+    final int imageSize = width * height * 3 ~/ 2;
+    final Uint8List bytes = Uint8List(imageSize);
+    int offset = 0;
+
     for (Plane plane in planes) {
-      allBytes.putUint8List(plane.bytes);
+      bytes.setRange(offset, offset + plane.bytes.length, plane.bytes);
+      offset += plane.bytes.length;
     }
-    return allBytes.done().buffer.asUint8List();
+
+    return bytes;
   }
 
   @override
@@ -103,24 +101,38 @@ class _FaceDetectionScreenState extends State<FaceDetectionScreen> {
       appBar: AppBar(title: Text('Face Detection')),
       body: _cameraController.value.isInitialized
           ? Stack(
+              fit: StackFit.expand,
               children: [
                 CameraPreview(_cameraController),
-                ..._faceBoundingBoxes.map((rect) {
-                  return Positioned(
-                    left: rect.left,
-                    top: rect.top,
-                    width: rect.width,
-                    height: rect.height,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.red, width: 2.0),
-                      ),
-                    ),
-                  );
-                }).toList(),
+                CustomPaint(
+                  painter: FacePainter(_faceBoundingBoxes),
+                ),
               ],
             )
           : Center(child: CircularProgressIndicator()),
     );
+  }
+}
+
+class FacePainter extends CustomPainter {
+  final List<Rect> faceBoundingBoxes;
+
+  FacePainter(this.faceBoundingBoxes);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint paint = Paint()
+      ..color = Colors.red
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+
+    for (final rect in faceBoundingBoxes) {
+      canvas.drawRect(rect, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) {
+    return true;
   }
 }

@@ -8,7 +8,7 @@ import os
 
 app = Flask(__name__)
 
-#Load the VGGFace2 pre-trained model
+# Load the VGGFace2 pre-trained model
 model = InceptionResnetV1(pretrained='vggface2').eval()
 mtcnn = MTCNN(keep_all=True, device='cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -43,7 +43,7 @@ def is_live(embedding, known_embedding, texture_score, threshold=0.65, texture_t
     similarity = cosine_similarity(embedding, known_embedding)
     return similarity[0][0] > threshold and texture_score > texture_threshold
 
-live_face_path = 'C:/Users/ULPI_OJT/newProj/app/assets/img.jpg'
+live_face_path = 'C:/Users/kenji/newProj/AntiSpoof-Flask/assets/img.jpg'
 if not os.path.isfile(live_face_path):
     print(f"Error: File '{live_face_path}' not found.")
     exit()
@@ -60,8 +60,18 @@ else:
 def process_frame():
     try:
         img_bytes = request.data
+        if not img_bytes:
+            print("No image data received")
+            return jsonify({'error': 'No image data received'}), 400
+
+        print(f"Received {len(img_bytes)} bytes of image data")
+
         np_arr = np.frombuffer(img_bytes, np.uint8)
         img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+        if img is None:
+            print("Failed to decode image")
+            return jsonify({'error': 'Failed to decode image'}), 400
+
         faces, img_rgb, boxes = detect_and_align_faces(img)
 
         results = []
