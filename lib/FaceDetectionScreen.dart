@@ -1,8 +1,9 @@
 import 'dart:typed_data';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 class FaceDetectionScreen extends StatefulWidget {
   @override
@@ -40,19 +41,21 @@ class _FaceDetectionScreenState extends State<FaceDetectionScreen> {
 
   Future<void> processCameraImage(CameraImage image) async {
     try {
-      // Convert CameraImage to raw bytes
-      final Uint8List bytes = concatenatePlanes(image.planes, image.width, image.height);
-
+      final Uint8List bytes = concatenatePlanes(image.planes);
       if (bytes.isEmpty) {
         print("No image data captured");
         return;
       }
 
+      print(
+          "Image width: ${image.width}, height: ${image.height}, bytes length: ${bytes.length}");
+      final base64Image = base64Encode(bytes);
+
       // Send image to server
       final response = await http.post(
-        Uri.parse('http://192.168.100.7:5000/process_frame'),
-        headers: {'Content-Type': 'application/octet-stream'},
-        body: bytes,
+        Uri.parse('http://192.168.155.105:5000/process_frame'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'image': base64Image}),
       );
 
       if (response.statusCode == 200) {
@@ -76,17 +79,12 @@ class _FaceDetectionScreenState extends State<FaceDetectionScreen> {
     }
   }
 
-  Uint8List concatenatePlanes(List<Plane> planes, int width, int height) {
-    final int imageSize = width * height * 3 ~/ 2;
-    final Uint8List bytes = Uint8List(imageSize);
-    int offset = 0;
-
+  Uint8List concatenatePlanes(List<Plane> planes) {
+    final WriteBuffer allBytes = WriteBuffer();
     for (Plane plane in planes) {
-      bytes.setRange(offset, offset + plane.bytes.length, plane.bytes);
-      offset += plane.bytes.length;
+      allBytes.putUint8List(plane.bytes);
     }
-
-    return bytes;
+    return allBytes.done().buffer.asUint8List();
   }
 
   @override

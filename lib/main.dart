@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 
 void main() {
   HttpOverrides.global = MyHttpOverrides();
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyHttpOverrides extends HttpOverrides {
@@ -18,6 +18,8 @@ class MyHttpOverrides extends HttpOverrides {
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     HttpOverrides.global = MyHttpOverrides();
