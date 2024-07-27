@@ -43,6 +43,8 @@ def is_live(embedding, known_embedding, texture_score, threshold=0.65, texture_t
     similarity = cosine_similarity(embedding, known_embedding)
     return similarity[0][0] > threshold and texture_score > texture_threshold
 
+
+#live_face_path = 'C:/Users/kenji/newProj/AntiSpoof-Flask/assets/img.jpg'
 live_face_path = 'C:/Users/ULPI_OJT/newProj/AntiSpoof-Flask/assets/img.jpg'
 if not os.path.isfile(live_face_path):
     print(f"Error: File '{live_face_path}' not found.")
@@ -59,34 +61,39 @@ else:
 @app.route('/process_frame', methods=['POST'])
 def process_frame():
     try:
-        data = request.get_json()
-        if 'image' not in data:
-            print("No image data received")
-            return jsonify({'error': 'No image data received'}), 400
+        if request.is_json:
+            data = request.get_json()
+            if 'image' not in data:
+                print("No image data received")
+                return jsonify({'error': 'No image data received'}), 400
 
-        img_str = data['image']
-        img_bytes = base64.b64decode(img_str)
+            img_str = data['image']
+            img_bytes = base64.b64decode(img_str)
 
-        np_arr = np.frombuffer(img_bytes, np.uint8)
-        img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-        if img is None:
-            print("Failed to decode image")
-            return jsonify({'error': 'Failed to decode image'}), 400
-              
-        faces, img_rgb, boxes = detect_and_align_faces(img)
+            np_arr = np.frombuffer(img_bytes, np.uint8)
+            img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+            if img is None:
+                print("Failed to decode image")
+                return jsonify({'error': 'Failed to decode image'}), 400
 
-        results = []
-        if boxes is not None:
-            embeddings = [get_face_embedding(face) for face in faces if face.size != 0]
-            texture_scores = [texture_analysis(face) for face in faces]
-            results = [is_live(embedding, known_live_face_embedding, texture_score)
-                       for embedding, texture_score in zip(embeddings, texture_scores)]
-        results = [bool(result) for result in results]
-        
-        response = {
-            'results': results
-        }
-        return jsonify(response)
+            faces, img_rgb, boxes = detect_and_align_faces(img)
+
+            results = []
+            if boxes is not None:
+                embeddings = [get_face_embedding(face) for face in faces if face.size != 0]
+                texture_scores = [texture_analysis(face) for face in faces]
+                results = [is_live(embedding, known_live_face_embedding, texture_score)
+                           for embedding, texture_score in zip(embeddings, texture_scores)]
+            results = [bool(result) for result in results]
+            print(results)
+            response = {
+                'results': results
+            }
+            return jsonify(response)
+            
+        else:
+            print("Content-Type not application/json")
+            return jsonify({'error': 'Content-Type not application/json'}), 400
     except Exception as e:
         print(f"Error processing frame: {e}")
         return jsonify({'error': str(e)}), 500

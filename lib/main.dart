@@ -28,7 +28,6 @@ class MyApp extends StatelessWidget {
       DeviceOrientation.portraitDown,
     ]);
     return MaterialApp(
-      title: 'Face Detection',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
