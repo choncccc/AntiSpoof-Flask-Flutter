@@ -19,7 +19,6 @@ class MyHttpOverrides extends HttpOverrides {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     HttpOverrides.global = MyHttpOverrides();

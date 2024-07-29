@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:http/http.dart' as http;
+// import 'package:web_socket_channel/web_socket_channel.dart';
 
 class FaceDetectionScreen extends StatefulWidget {
   @override
@@ -13,24 +14,26 @@ class _FaceDetectionScreenState extends State<FaceDetectionScreen> {
   late CameraController _cameraController;
   Timer? _timer;
   String? displayMessage;
+  //late WebSocketChannel _webSocketChannel;
 
   @override
   void initState() {
     super.initState();
     initializeCamera();
+    //_webSocketChannel =
+    // WebSocketChannel.connect(Uri.parse('ws://localhost:8080'));
   }
 
   Future<void> initializeCamera() async {
     final cameras = await availableCameras();
     _cameraController = CameraController(
       cameras.firstWhere(
-          (camera) => camera.lensDirection == CameraLensDirection.front),
-      //(camera) => camera.lensDirection == CameraLensDirection.back),
+          (camera) => camera.lensDirection == CameraLensDirection.back),
+      //(camera) => camera.lensDirection == CameraLensDirection.front),
       ResolutionPreset.medium,
     );
     await _cameraController.initialize();
     await _cameraController.setFlashMode(FlashMode.off);
-    //captureAndSendImage();
     startImageCaptureTimer();
     setState(() {});
   }
@@ -63,6 +66,7 @@ class _FaceDetectionScreenState extends State<FaceDetectionScreen> {
             } else {
               displayMessage = result['results'][0] ? 'Live' : 'Spoof';
             }
+            // _webSocketChannel.sink.add(displayMessage);
           });
         } else {
           print('Error: ${response.reasonPhrase}');
@@ -77,6 +81,7 @@ class _FaceDetectionScreenState extends State<FaceDetectionScreen> {
   void dispose() {
     _cameraController.dispose();
     _timer?.cancel();
+    //_webSocketChannel.sink.close();
     super.dispose();
   }
 

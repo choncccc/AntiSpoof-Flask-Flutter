@@ -47,7 +47,7 @@ def is_live(embedding, known_embedding, texture_score, threshold=0.65, texture_t
 #live_face_path = 'C:/Users/kenji/newProj/AntiSpoof-Flask/assets/img.jpg'
 live_face_path = 'C:/Users/ULPI_OJT/newProj/AntiSpoof-Flask/assets/img.jpg'
 if not os.path.isfile(live_face_path):
-    print(f"Error: File '{live_face_path}' not found.")
+    print("File not found")
     exit()
 
 live_face_img = cv2.imread(live_face_path)
@@ -55,7 +55,7 @@ known_live_faces, _, _ = detect_and_align_faces(live_face_img)
 if len(known_live_faces) > 0:
     known_live_face_embedding = get_face_embedding(known_live_faces[0])
 else:
-    print("Error: No face detected.")
+    print("No face detected")
     exit()
 
 @app.route('/process_frame', methods=['POST'])
