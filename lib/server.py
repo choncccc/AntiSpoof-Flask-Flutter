@@ -94,6 +94,7 @@ def process_frame():
         else:
             print("Content-Type not application/json")
             return jsonify({'error': 'Content-Type not application/json'}), 400
+        
     except Exception as e:
         print(f"Error processing frame: {e}")
         return jsonify({'error': str(e)}), 500
