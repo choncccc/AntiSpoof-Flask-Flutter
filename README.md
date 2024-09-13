@@ -1,6 +1,5 @@
 # Anti Spoof Project - Internship
-
-A new Flutter project.
+Mobile Face Recognition with Anti Spoofing Tech.
 
 ## Description:
 
